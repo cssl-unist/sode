@@ -1,0 +1,36 @@
+# Database Parameters
+database:
+  key_size: 16
+  value_size: 16
+  nr_entry: 1048576
+
+# Workload Parameters
+workload:
+  nr_warmup_op: 0
+  nr_op: 1000
+  nr_thread: 1
+  next_op_interval_ns: 0  # use 50000 on mars
+  operation_proportion:
+    read: 1
+    update: 0
+    insert: 0
+    scan: 0
+    read_modify_write: 0
+  request_distribution: "uniform"
+  # for zipfian distribution
+  zipfian_constant: 0.99
+  # for trace workload
+  trace_file_list:
+    - "./cur_trace"
+  # for scan operation
+  scan_length: 100
+
+# WiredTiger Parameters
+wiredtiger:
+  data_dir: "/home/yuhongyi/nvme0n1/tigerhome"
+  table_name: "lsm:karaage"
+  conn_config: "create,direct_io=[data,checkpoint],buffer_alignment=512B,mmap=false,cache_size=128M,eviction_trigger=95,eviction_target=80,eviction=(threads_max=2,threads_min=2),statistics=(fast)"
+  session_config: "isolation=read-uncommitted"
+  cursor_config: ""
+  create_table_config: "key_format=S,value_format=S,allocation_size=512B,internal_page_max=512B,leaf_page_max=512B"
+  print_stats: true

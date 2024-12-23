@@ -1,0 +1,34 @@
+# Database Parameters
+database:
+  key_size: 16
+  value_size: 4096
+  nr_entry: 262144
+
+# Workload Parameters
+workload:
+  nr_warmup_op: 0
+  nr_op: 5000000
+  nr_init_thread: 1
+  nr_thread: 1
+  next_op_interval_ns: 0
+  operation_proportion:
+    read: 1
+    update: 0
+    insert: 0
+    scan: 0
+    read_modify_write: 0
+  request_distribution: "uniform"
+  # for zipfian distribution
+  zipfian_constant: 0.99
+  # for scan operation
+  scan_length: 100
+
+# Measurement Parameters
+measurement:
+  latency_file: ""
+
+# Redis Parameters
+redis:
+  addr: "127.0.0.1"
+  port: 6379
+  batch_size: 1

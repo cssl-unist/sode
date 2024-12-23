@@ -1,0 +1,131 @@
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
+    printf "    sudo reboot\n"
+    exit 1
+fi
+
+SCRIPT_PATH=`realpath $0`
+EVAL_PATH=`dirname $SCRIPT_PATH`
+BASE_DIR=`realpath $EVAL_PATH/../..`
+WT_PATH="$BASE_DIR/benchmark/wiredtiger-sode"
+YCSB_PATH="$BASE_DIR/benchmark/My-YCSB"
+TRACE_PATH="$YCSB_PATH/build/trace"
+TRACE_GENERATOR_PATH="$YCSB_PATH/script/zipfian_trace.py"
+UTILS_PATH="$BASE_DIR/utils"
+MOUNT_POINT="/mnt/sode"
+DB_PATH="$MOUNT_POINT/tigerhome"
+CACHED_DB_PATH="/tigerhome"
+CACHED_TRACE_PATH="/zipfian_trace"
+
+CONFIG="ycsb_c.yaml"
+YCSB_CONFIG_PATH="$YCSB_PATH/wiredtiger/config/$CONFIG"
+CACHE_SIZE="512M"
+NUM_THREADS=1
+NUM_OPS=20000000
+DEV_NAME="/dev/nvme0n1"
+if [ ! -z $1 ]; then
+    DEV_NAME=$1
+fi
+
+pushd $BASE_DIR/benchmark
+./build_and_install_wiredtiger-sode.sh 1> /dev/null 2> /dev/null
+./build_and_install_ycsb.sh 1> /dev/null 2> /dev/null
+popd
+
+printf "CONFIG=$CONFIG\n"
+printf "CACHE_SIZE=$CACHE_SIZE\n"
+printf "DEV_NAME=$DEV_NAME\n"
+printf "NUM_THREADS=$NUM_THREADS\n"
+printf "NUM_OPS=$NUM_OPS\n"
+
+cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
+
+
+# Check whether WiredTiger is built
+if [ ! -e "$WT_PATH/wt" ]; then
+    printf "Cannot find WiredTiger binary. Please build WiredTiger first.\n"
+    exit 1
+fi
+# Check whether My-YCSB is built
+if [ ! -e "$YCSB_PATH/build/init_wt" ]; then
+    printf "Cannot find My-YCSB binary. Please build My-YCSB first.\n"
+    exit 1
+fi
+
+# Disable CPU frequency scaling
+$UTILS_PATH/disable_cpu_freq_scaling.sh
+
+# Mount disk
+$UTILS_PATH/mount_disk.sh $DEV_NAME $MOUNT_POINT
+
+# Create result folder
+mkdir -p $EVAL_PATH/result
+
+pushd $YCSB_PATH/build
+
+# Create database file
+# Note: YCSB-C is read-only. We don't need to recreate after each exp
+printf "Creating database folder...\n"
+sudo rm -rf $MOUNT_POINT/*
+sudo mkdir -p $DB_PATH
+if [ -e $CACHED_DB_PATH ]; then
+    printf "Found cached database file. Copying...(This will take a while)\n"
+    pushd $CACHED_DB_PATH
+    sudo cp * $DB_PATH/
+    popd
+else
+    printf "Failed to find cached database file. Creating a new one...(This will take a very long time)\n"
+    sudo ./init_wt $YCSB_CONFIG_PATH
+fi
+
+# Prepare trace files
+printf "Creating trace file folder...\n"
+mkdir -p $TRACE_PATH
+for ZIPF in 1.1 1.2 1.3 1.4 1.5 1.6; do
+    if [ ! -e $TRACE_PATH/trace_$ZIPF ]; then
+        if [ -e $CACHED_TRACE_PATH/trace_$ZIPF ]; then
+            printf "Found cached trace file for ZIPF=$ZIPF. Copying...\n"
+            pushd $CACHED_TRACE_PATH
+            sudo cp trace_$ZIPF $TRACE_PATH/
+            popd
+        else
+            printf "Failed to find trace file for ZIPF=$ZIPF. Generating trace for it...(This will take a while)\n"
+            python3.6 $TRACE_GENERATOR_PATH $ZIPF $TRACE_PATH/trace_$ZIPF
+        fi
+    fi
+done
+
+# Run experiments
+for ZIPF in 0 0.6 0.7 0.8 0.9 0.99 1.1 1.2 1.3 1.4 1.5 1.6; do
+    # Update configuration file
+    cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
+
+    sed -i 's#data_dir: .*#data_dir: "'$DB_PATH'"#' $YCSB_CONFIG_PATH
+    sed -i 's#nr_thread: .*#nr_thread: '$NUM_THREADS'#' $YCSB_CONFIG_PATH
+    sed -i 's#cache_size=[0-9A-Za-z]*,#cache_size='$CACHE_SIZE',#' $YCSB_CONFIG_PATH
+    sed -i 's#nr_op: .*#nr_op: '$NUM_OPS'#' $YCSB_CONFIG_PATH
+
+    if [ `echo "$ZIPF == 0" | bc` -eq 1 ]; then
+        # Uniform distribution
+        DIST="uniform"
+    elif [ `echo "$ZIPF >= 1" | bc` -eq 1 ]; then
+        # Use pre-generated trace because the embedded Zipfian sampler does not support ZIPF >= 1
+        DIST="trace"
+        rm -rf cur_trace
+        ln -s $TRACE_PATH/trace_$ZIPF cur_trace
+    else
+        # Normal Zipfian distribution
+        DIST="zipfian"
+        sed -i 's#zipfian_constant: .*#zipfian_constant: '$ZIPF'#' $YCSB_CONFIG_PATH
+    fi
+    sed -i 's#request_distribution: .*#request_distribution: "'$DIST'"#' $YCSB_CONFIG_PATH
+
+    # Run with XRP
+    export WT_BPF_PATH="$WT_PATH/bpf_prog/wt_bpf.o"
+    printf "Evaluating WiredTiger with ZIPF=$ZIPF and SODE...\n"
+    sudo -E numactl --membind=0 --cpunodebind=0 ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$ZIPF-zipf-sode.txt
+done
+popd
+
+printf "Done. Results are stored in $EVAL_PATH/result\n"
