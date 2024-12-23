@@ -149,7 +149,7 @@ int ebpf_lookup(int fd, uint64_t offset, uint8_t *key_buf, uint64_t key_size,
     scratch->key_size = key_size;
     memcpy(scratch->key, key_buf, key_size);
 
-    /* call xrp read */
+    /* call sode read */
     ret = syscall(__NR_read_sode, fd, data_buf, EBPF_BLOCK_SIZE, offset, bpf_fd, scratch_buf);
     if (ret != EBPF_BLOCK_SIZE) {
         printf("ebpf_lookup: read_sode failed, ret %d\n", ret);
