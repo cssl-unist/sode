@@ -295,6 +295,78 @@ __block_write_off(WT_SESSION_IMPL *session, WT_BLOCK *block, WT_ITEM *buf, wt_of
      */
     blk->disk_size = WT_STORE_SIZE(align_size);
 
+
+    ////
+    // checkpoints
+    // by chanyoung
+    ////
+    if (!checkpoint_io) {
+        WT_CELL_UNPACK_ADDR unpack;
+        WT_PAGE_HEADER *dsk = (WT_PAGE_HEADER *)buf->mem;
+        uint64_t mark;
+        uint64_t head_cell[4] = {0, 0, 0, 0};
+        uint64_t value;
+        int i;
+        int div;
+        uint64_t prev = 0;
+        bool skip = false;
+        int offset;
+        WT_CELL *next_cell;
+
+        div = dsk->u.entries / 2;
+
+        if (div <= 16) {
+
+            offset = 28 + 12;
+
+            //fprintf(stderr, "WHAT Cell %d, %d\n", checkpoint_io, dsk->u.entries);
+            i = 0;
+            WT_CELL_FOREACH_ADDR (session, dsk, unpack) {
+                // unpack.type 80 == cell key, 128 cell value, SEE include/cell.i
+                //fprintf(stderr, "TYPE %d, %d %d\n", unpack.type, align_size, dsk->u.entries);
+
+                /*
+                   next_cell = __cell + unpack.__len;
+                   if (next_cell->block == NULL) {
+                   fprintf(stderr, "NULL Cell\n");
+                   break;
+                   }
+                   */
+
+                mark = (uint64_t)offset & 0xFFF;
+                //fprintf(stderr, "CELL %d, %016lx (%d), (%d/%d)\n", mark >> 10, __cell, __cell - prev, i, dsk->u.entries);
+
+                prev = (uint64_t)__cell;
+                if (i % 8 == 0 && unpack.type == 80) {
+                    if (i <= 24) {
+                        head_cell[i / 8] = mark;
+                    }
+                    //fprintf(stderr, "{%d} %d\n", i / 8, mark);
+                }
+                i += 1;
+                offset += unpack.__len;
+            }
+            WT_CELL_FOREACH_END;
+
+            if (!skip) {
+                //value = (head_cell[0] << 36) | (head_cell[1] << 24) | (head_cell[2] << 12) | head_cell[3];
+                //value = (head_cell[1] << 24) | (head_cell[2] << 12) | head_cell[3];
+                if (head_cell[3] != 0) {
+                    value = ((head_cell[1] - 40) << 16) | ((head_cell[2] - head_cell[1]) << 8) | (head_cell[3] - head_cell[2]);
+                }
+                else if (head_cell[2] != 0) {
+                    value = ((head_cell[1] - 40) << 16) | ((head_cell[2] - head_cell[1]) << 8) | (0);
+                }
+                else if (head_cell[1] != 0) {
+                    value = ((head_cell[1] - 40) << 16) | (0) | (0);
+                }
+                //fprintf(stderr, "MARK %016lx\n", value);
+                memcpy(blk->unused, &value, 3);
+            }
+        }
+    }
+    
+
     /*
      * Update the block's checksum: if our caller specifies, checksum the complete data, otherwise
      * checksum the leading WT_BLOCK_COMPRESS_SKIP bytes. The assumption is applications with good
@@ -320,7 +392,6 @@ __block_write_off(WT_SESSION_IMPL *session, WT_BLOCK *block, WT_ITEM *buf, wt_of
 #ifdef WORDS_BIGENDIAN
     blk->checksum = __wt_bswap32(blk->checksum);
 #endif
-
     /* Write the block. */
     if ((ret = __wt_write(session, fh, offset, align_size, buf->mem)) != 0) {
         if (!caller_locked)
