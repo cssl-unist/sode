@@ -42,28 +42,28 @@ $UTILS_PATH/disable_cpu_freq_scaling.sh
 mkdir -p $EVAL_PATH/result
 
 # Specialized BPF-KV for SODE-enabled io_uring with open-loop load generator
-pushd $BPFKV_IO_URING_OPEN_LOOP_PATH
+pushd $BPFKV_IO_URING_OPEN_LOOP_PATH_SODE
 # Unmont disk (io_uring is measured with raw block device)
 $UTILS_PATH/unmount_disk.sh $DEV_NAME
 # Load database
 printf "Creating a BPF-KV database file with $LAYER layers of index...\n"
 sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --load $LAYER
 for NUM_THREADS in {6..24}; do
-    printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, $REQ_PER_SEC ops/s, and XRP...\n"
-    # Warmup first
-    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS))
-
-    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS)) | tee $EVAL_PATH/result/$NUM_THREADS-threads-xrp.txt
-done
-popd
-
-pushd $BPFKV_IO_URING_OPEN_LOOP_PATH_SODE
-for NUM_THREADS in {6..24}; do
     printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, $REQ_PER_SEC ops/s, and SODE...\n"
     # Warmup first
     sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS))
 
     sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS)) | tee $EVAL_PATH/result/$NUM_THREADS-threads-sode.txt
+done
+popd
+
+pushd $BPFKV_IO_URING_OPEN_LOOP_PATH
+for NUM_THREADS in {6..24}; do
+    printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, $REQ_PER_SEC ops/s, and XRP...\n"
+    # Warmup first
+    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS))
+
+    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS)) | tee $EVAL_PATH/result/$NUM_THREADS-threads-xrp.txt
 done
 popd
 

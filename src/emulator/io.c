@@ -2353,15 +2353,9 @@ static int nvmev_io_worker(void *data)
 			curr = w->next;
 		}
 
-        /*
-        counter += 1;
-        if ((counter % 100000000) == 0) {
-            printk("<%d> in-storage %d, in-kernel %d, %d, %d, %d", id, in, out, worker->ebpf_time, get_curr_roundtrip_latency(), xrp_ebpf_time);
-            in = 0;
-            out = 0;
-            counter = 0;
+        if (worker->io_seq_end != last && worker->io_seq_end != -1) {
+            continue;
         }
-        */
 
 		for (qidx = 1; qidx <= nvmev_vdev->nr_cq; qidx++) {
 			struct nvmev_completion_queue *cq = nvmev_vdev->cqes[qidx];
