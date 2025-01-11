@@ -43,9 +43,11 @@ fi
 cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
 
 for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.yaml" "ycsb_f.yaml"; do
+
+    # DB for tail_latency
     CACHE_SIZE=512
     for NUM_THREADS in 1 2 3; do
-        NAME=baseline_${CACHE_SIZE}_${NUM_THREADS}
+        NAME=baseline_tail_${CACHE_SIZE}_${NUM_THREADS}
 
         DB_PATH=$DB_PATH_BASE/$NAME
         sudo mkdir -p $DB_PATH
@@ -73,9 +75,10 @@ for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.ya
         popd
     done
 
-    NUM_THREADS=1
-    for CACHE_SIZE in 1024 2048 4096; do
-        NAME=baseline_${CACHE_SIZE}_${NUM_THREADS}
+    # DB for throughput
+    CACHE_SIZE=512
+    for NUM_THREADS in 1 2 3; do
+        NAME=baseline_throughput_${CACHE_SIZE}_${NUM_THREADS}
 
         DB_PATH=$DB_PATH_BASE/$NAME
         sudo mkdir -p $DB_PATH
@@ -95,7 +98,34 @@ for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.ya
         sed -i 's#nr_thread: .*#nr_thread: '$NUM_THREADS'#' $YCSB_CONFIG_PATH
         sed -i 's#cache_size=[0-9A-Za-z]*,#cache_size='$CACHE_SIZE',#' $YCSB_CONFIG_PATH
 
-        sed -i 's#next_op_interval_ns: [0-9A-Za-z]*#next_op_interval_ns: '$OP_INTERVAL'#' $YCSB_CONFIG_PATH
+        # Create database file
+        pushd $YCSB_PATH/build
+            sudo ./init_wt $YCSB_CONFIG_PATH
+        popd
+    done
+
+    NUM_THREADS=1
+    for CACHE_SIZE in 1024 2048 4096; do
+        NAME=baseline_throughput_${CACHE_SIZE}_${NUM_THREADS}
+
+        DB_PATH=$DB_PATH_BASE/$NAME
+        sudo mkdir -p $DB_PATH
+
+        YCSB_CONFIG_PATH="$YCSB_PATH/wiredtiger/config/$CONFIG"
+
+        if [ "$CONFIG" != "ycsb_e.yaml" ]; then
+            OP_INTERVAL=50000
+        else
+            OP_INTERVAL=200000
+        fi
+
+        # Update configuration file
+        CACHE_SIZE=${CACHE_SIZE}M
+        cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
+        sed -i 's#data_dir: .*#data_dir: "'$DB_PATH'"#' $YCSB_CONFIG_PATH
+        sed -i 's#nr_thread: .*#nr_thread: '$NUM_THREADS'#' $YCSB_CONFIG_PATH
+        sed -i 's#cache_size=[0-9A-Za-z]*,#cache_size='$CACHE_SIZE',#' $YCSB_CONFIG_PATH
+        #sed -i 's#next_op_interval_ns: [0-9A-Za-z]*#next_op_interval_ns: '$OP_INTERVAL'#' $YCSB_CONFIG_PATH
 
         # Create database file
         pushd $YCSB_PATH/build
@@ -128,9 +158,10 @@ fi
 cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
 
 for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.yaml" "ycsb_f.yaml"; do
+    # DB for tail latency
     CACHE_SIZE=512
     for NUM_THREADS in 1 2 3; do
-        NAME=sode_${CACHE_SIZE}_${NUM_THREADS}
+        NAME=sode_tail_${CACHE_SIZE}_${NUM_THREADS}
 
         DB_PATH=$DB_PATH_BASE/$NAME
         sudo mkdir -p $DB_PATH
@@ -151,6 +182,35 @@ for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.ya
         sed -i 's#cache_size=[0-9A-Za-z]*,#cache_size='$CACHE_SIZE',#' $YCSB_CONFIG_PATH
 
         sed -i 's#next_op_interval_ns: [0-9A-Za-z]*#next_op_interval_ns: '$OP_INTERVAL'#' $YCSB_CONFIG_PATH
+
+        # Create database file
+        pushd $YCSB_PATH/build
+            sudo ./init_wt $YCSB_CONFIG_PATH
+        popd
+    done
+
+    # DB for throughput
+    CACHE_SIZE=512
+    for NUM_THREADS in 1 2 3; do
+        NAME=sode_throughput_${CACHE_SIZE}_${NUM_THREADS}
+
+        DB_PATH=$DB_PATH_BASE/$NAME
+        sudo mkdir -p $DB_PATH
+
+        YCSB_CONFIG_PATH="$YCSB_PATH/wiredtiger/config/$CONFIG"
+
+        if [ "$CONFIG" != "ycsb_e.yaml" ]; then
+            OP_INTERVAL=50000
+        else
+            OP_INTERVAL=200000
+        fi
+
+        # Update configuration file
+        CACHE_SIZE=${CACHE_SIZE}M
+        cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
+        sed -i 's#data_dir: .*#data_dir: "'$DB_PATH'"#' $YCSB_CONFIG_PATH
+        sed -i 's#nr_thread: .*#nr_thread: '$NUM_THREADS'#' $YCSB_CONFIG_PATH
+        sed -i 's#cache_size=[0-9A-Za-z]*,#cache_size='$CACHE_SIZE',#' $YCSB_CONFIG_PATH
 
         # Create database file
         pushd $YCSB_PATH/build
@@ -180,8 +240,6 @@ for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.ya
         sed -i 's#nr_thread: .*#nr_thread: '$NUM_THREADS'#' $YCSB_CONFIG_PATH
         sed -i 's#cache_size=[0-9A-Za-z]*,#cache_size='$CACHE_SIZE',#' $YCSB_CONFIG_PATH
 
-        sed -i 's#next_op_interval_ns: [0-9A-Za-z]*#next_op_interval_ns: '$OP_INTERVAL'#' $YCSB_CONFIG_PATH
-
         # Create database file
         pushd $YCSB_PATH/build
             sudo ./init_wt $YCSB_CONFIG_PATH
@@ -189,7 +247,7 @@ for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.ya
     done
 done
 
-printf "Generate cached DB: SODE-NO-PARALLEL DB\n"
+printf "Generate cached DB: SODE-NOPARALLEL DB\n"
 
 WT_PATH="$BASE_DIR/benchmark/wiredtiger-sode-noparallel"
 YCSB_PATH="$BASE_DIR/benchmark/My-YCSB"
@@ -234,8 +292,6 @@ for CONFIG in "ycsb_c.yaml"; do
     sed -i 's#data_dir: .*#data_dir: "'$DB_PATH'"#' $YCSB_CONFIG_PATH
     sed -i 's#nr_thread: .*#nr_thread: '$NUM_THREADS'#' $YCSB_CONFIG_PATH
     sed -i 's#cache_size=[0-9A-Za-z]*,#cache_size='$CACHE_SIZE',#' $YCSB_CONFIG_PATH
-
-    sed -i 's#next_op_interval_ns: [0-9A-Za-z]*#next_op_interval_ns: '$OP_INTERVAL'#' $YCSB_CONFIG_PATH
 
     # Create database file
     pushd $YCSB_PATH/build
