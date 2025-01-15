@@ -3,19 +3,19 @@ set -eux -o pipefail
 
 # Enable source
 printf "Installing dependencies...\n"
-sudo cp /etc/apt/sources.list /etc/apt/sources.list~
-sudo sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list
+#sudo cp /etc/apt/sources.list /etc/apt/sources.list~
+#sudo sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list
 #sudo apt-get update
 
 # Install build dependencies
-#sudo apt-get build-dep linux linux-image-$(uname -r) -y || true
-#sudo apt-get install -y libncurses-dev flex bison openssl libssl-dev dkms \
-#    libelf-dev libudev-dev libpci-dev libiberty-dev \
-#    autoconf fakeroot bc cpio
+sudo apt-get build-dep linux linux-image-$(uname -r) -y || true
+sudo apt-get install -y libncurses-dev flex bison openssl libssl-dev dkms \
+    libelf-dev libudev-dev libpci-dev libiberty-dev \
+    autoconf fakeroot bc cpio gcc-7 g++-7
 
 # Install BTF dependency
-#wget -O /tmp/dwarves_1.17-1_amd64.deb http://old-releases.ubuntu.com/ubuntu/pool/universe/d/dwarves-dfsg/dwarves_1.17-1_amd64.deb
-#sudo dpkg -i /tmp/dwarves_1.17-1_amd64.deb
+wget -O /tmp/dwarves_1.17-1_amd64.deb http://old-releases.ubuntu.com/ubuntu/pool/universe/d/dwarves-dfsg/dwarves_1.17-1_amd64.deb
+sudo dpkg -i /tmp/dwarves_1.17-1_amd64.deb
 
 
 SCRIPT_PATH=`realpath $0`
@@ -23,10 +23,6 @@ BASE_DIR=`dirname $SCRIPT_PATH`
 LINUX_PATH="$BASE_DIR/linux"
 
 pushd $LINUX_PATH
-if [ ! -e "Makefile" ]; then
-    git submodule init
-    git submodule update
-fi
 
 # Cleanup the previous build
 rm -f ../linux-* 2> /dev/null
@@ -62,7 +58,7 @@ fi
 
 # Compile kernel
 printf "Compiling kernel...\n"
-make deb-pkg -j`nproc`
+make deb-pkg -j`nproc` CC=gcc-7 CXX=g++-7
 popd
 
 # Install kernel

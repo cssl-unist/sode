@@ -831,13 +831,13 @@ static void __fill_cq_result_complete(struct nvmev_io_work *w)
 
 	cq->cq_head = cq_head;
 	cq->interrupt_ready = true;
+	spin_unlock(&cq->entry_lock);
 
     if (spin_trylock(&cq->irq_lock)) {
         cq->interrupt_ready = false;
         nvmev_signal_irq(cq->irq_vector);
         spin_unlock(&cq->irq_lock);
     }
-	spin_unlock(&cq->entry_lock);
 }
 
 void driver_retrieve_mapping(struct xrp_extent *extents, int num_extents, loff_t offset, loff_t len, struct xrp_mapping *mapping)
@@ -2166,6 +2166,7 @@ static int nvmev_io_worker(void *data)
     int id = smp_processor_id();
     int waiting = 0, prev_waiting = 0;
 
+    bool is_continue = false;
     int i = 0;
 
 	NVMEV_INFO("%s started on cpu %d (node %d)\n", worker->thread_name, smp_processor_id(),
@@ -2178,10 +2179,9 @@ static int nvmev_io_worker(void *data)
 
 		volatile unsigned int curr = worker->io_seq;
         volatile unsigned int last = worker->io_seq_end;
-        unsigned int prev_curr = -1;
         struct nvmev_io_work *w;
 		int qidx;
-    
+
         //printk("HEAD %d", curr);
         while (curr != -1) {
 			unsigned long long curr_nsecs;
@@ -2190,12 +2190,6 @@ static int nvmev_io_worker(void *data)
 			curr_nsecs = local_clock() + delta;
             w = &worker->work_queue[WQ(curr)][QE(curr)];
 			worker->latest_nsecs = curr_nsecs;
-
-            if (prev_curr == last) {
-                break;
-            }
-
-            prev_curr = curr;
 
 			if (w->is_resubmit == true || w->is_completed == true) {
 				curr = w->next;
@@ -2259,6 +2253,11 @@ static int nvmev_io_worker(void *data)
                             curr_rq[worker->id] = curr;
                             resubmit_waiting[worker->id] += 1;
 
+                            if (worker->io_seq_end != last && worker->io_seq_end != -1 && curr == last) {
+                                is_continue = true;
+                                break;
+                            }
+
                             curr = w->next;
                             continue;
                         }
@@ -2302,6 +2301,11 @@ static int nvmev_io_worker(void *data)
 
                                 spin_unlock(&global_worker_lock);
 
+                                if (worker->io_seq_end != last && worker->io_seq_end != -1 && curr == last) {
+                                    is_continue = true;
+                                    break;
+                                }
+
                                 curr = w->next;
                                 continue;
                             }
@@ -2320,6 +2324,11 @@ static int nvmev_io_worker(void *data)
 
                     mb();
                     w->is_completed = true;
+
+                    if (worker->io_seq_end != last && worker->io_seq_end != -1&& curr == last) {
+                        is_continue = true;
+                        break;
+                    }
 
                     curr = w->next;
                     continue;
@@ -2353,15 +2362,10 @@ static int nvmev_io_worker(void *data)
 			curr = w->next;
 		}
 
-        /*
-        counter += 1;
-        if ((counter % 100000000) == 0) {
-            printk("<%d> in-storage %d, in-kernel %d, %d, %d, %d", id, in, out, worker->ebpf_time, get_curr_roundtrip_latency(), xrp_ebpf_time);
-            in = 0;
-            out = 0;
-            counter = 0;
+        if (is_continue) {
+            is_continue = false;
+            continue;
         }
-        */
 
 		for (qidx = 1; qidx <= nvmev_vdev->nr_cq; qidx++) {
 			struct nvmev_completion_queue *cq = nvmev_vdev->cqes[qidx];
@@ -2373,30 +2377,27 @@ static int nvmev_io_worker(void *data)
 			if (cq == NULL || !cq->irq_enabled)
 				continue;
 
-            if (spin_trylock(&cq->entry_lock)) {
-                if (spin_trylock(&cq->irq_lock)) {
-                    if (cq->interrupt_ready == true) {
+            if (spin_trylock(&cq->irq_lock)) {
+                if (cq->interrupt_ready == true) {
 #ifdef PERF_DEBUG
-                        prev_clock = local_clock();
+                    prev_clock = local_clock();
 #endif
-                        cq->interrupt_ready = false;
-                        nvmev_signal_irq(cq->irq_vector);
+                    cq->interrupt_ready = false;
+                    nvmev_signal_irq(cq->irq_vector);
 
 #ifdef PERF_DEBUG
-                        intr_clock[qidx] += (local_clock() - prev_clock);
-                        intr_counter[qidx]++;
+                    intr_clock[qidx] += (local_clock() - prev_clock);
+                    intr_counter[qidx]++;
 
-                        if (intr_counter[qidx] > 1000) {
-                            NVMEV_DEBUG("Intr %d: %llu\n", qidx,
-                                    intr_clock[qidx] / intr_counter[qidx]);
-                            intr_clock[qidx] = 0;
-                            intr_counter[qidx] = 0;
-                        }
-#endif
+                    if (intr_counter[qidx] > 1000) {
+                        NVMEV_DEBUG("Intr %d: %llu\n", qidx,
+                                intr_clock[qidx] / intr_counter[qidx]);
+                        intr_clock[qidx] = 0;
+                        intr_counter[qidx] = 0;
                     }
-                    spin_unlock(&cq->irq_lock);
+#endif
                 }
-                spin_unlock(&cq->entry_lock);
+                spin_unlock(&cq->irq_lock);
             }
 		}
 		cond_resched();

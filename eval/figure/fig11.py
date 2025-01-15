@@ -50,8 +50,8 @@ for i in range(0, len(data['read'])):
 
 total = sum(data['XRP']) / sum(data['read'])
 
-plt.axhline(y=29095.15/23485.36, color='C2', linestyle='dashed', label='Uniform (XRP)')
-plt.axhline(y=29742.81/23485.36, color='C1', linestyle='dashed', label='Uniform (SODE)')
+plt.axhline(y=max(xrp), color='C2', linestyle='dashed', label='Uniform (XRP)')
+plt.axhline(y=max(sode), color='C1', linestyle='dashed', label='Uniform (SODE)')
 plt.plot(plot_zipfian_constant_list, xrp, label='Zipfian (XRP)', marker='o', markersize=3, color='C2')
 plt.plot(plot_zipfian_constant_list, sode, label='Zipfian (SODE)', marker='o', markersize=3, color='C1')
 

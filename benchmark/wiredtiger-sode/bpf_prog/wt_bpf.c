@@ -553,13 +553,17 @@ __u32 wiredtiger_lookup(struct bpf_xrp *context) {
     uint64_t src_offset, dst_offset;
     int i;
     int ret;
+    int done = 0;
 
-    dst_offset = 1024;
-    dst_offset += EBPF_BLOCK_SIZE * scratch->level;
-    dst_offset /= sizeof(uint64_t);
-    src_offset = 0;
-    for (i = 0; i < EBPF_BLOCK_SIZE / sizeof(uint64_t); ++i, ++src_offset, ++dst_offset) {
-        *(dst_ptr + (dst_offset & (EBPF_CONTEXT_MASK >> 3))) = *(src_ptr + (src_offset & (EBPF_CONTEXT_MASK >> 3)));
+    done = context->done;
+    if (done <= 0 || done > 7) {
+        dst_offset = 1024;
+        dst_offset += EBPF_BLOCK_SIZE * scratch->level;
+        dst_offset /= sizeof(uint64_t);
+        src_offset = 0;
+        for (i = 0; i < EBPF_BLOCK_SIZE / sizeof(uint64_t); ++i, ++src_offset, ++dst_offset) {
+            *(dst_ptr + (dst_offset & (EBPF_CONTEXT_MASK >> 3))) = *(src_ptr + (src_offset & (EBPF_CONTEXT_MASK >> 3)));
+        }
     }
 
     ++scratch->nr_page;

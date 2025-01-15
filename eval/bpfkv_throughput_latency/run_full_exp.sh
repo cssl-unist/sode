@@ -60,9 +60,6 @@ popd
 
 # Specialized BPF-KV for XRP-enabled io_uring with open-loop load generator
 pushd $BPFKV_IO_URING_OPEN_LOOP_PATH
-# Load database
-printf "Creating a BPF-KV database file with $LAYER layers of index...\n"
-sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --load $LAYER
 for i in {1..12}; do
     REQ_PER_SEC=$((60000 * i))
     printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, $REQ_PER_SEC ops/s, and XRP...\n"
