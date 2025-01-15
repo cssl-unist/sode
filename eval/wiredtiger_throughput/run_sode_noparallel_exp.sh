@@ -17,6 +17,12 @@ if [ ! -z $1 ]; then
 fi
 printf "DEV_NAME=$DEV_NAME\n"
 
+CACHED_DB=""
+if [ ! -z $2 ]; then
+    CACHED_DB=$2
+fi
+printf "CACHED_DB=$CACHED_DB\n"
+
 pushd $BASE_DIR/benchmark
 ./build_and_install_wiredtiger-sode-noparallel.sh 1> /dev/null 2> /dev/null
 ./build_and_install_ycsb.sh 1> /dev/null 2> /dev/null
@@ -39,7 +45,7 @@ for CONFIG in "ycsb_c.yaml"; do
     NUM_THREADS=1
     CACHE_SIZE=512
     # Evaluate WiredTiger with SODE
-    $EVAL_PATH/run_sode_noparallel_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS y $DEV_NAME
+    $EVAL_PATH/run_sode_noparallel_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS y $DEV_NAME $CACHED_DB
 done
 
 printf "Done. Results are stored in $EVAL_PATH/result\n"

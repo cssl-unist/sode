@@ -36,6 +36,11 @@ if [ $CACHE_SIZE -lt 512 ] || [ $CACHE_SIZE -gt 4096 ]; then
     printf "Cache size $CACHE_SIZE is out of range. Min: 512. Max: 4096.\n"
     exit 1
 fi
+
+if [ ! -z $6 ]; then
+    CACHED_DB_PATH=$6/sode_throughput_${CONFIG}_${CACHE_SIZE}_${NUM_THREADS}
+fi
+
 CACHE_SIZE=${CACHE_SIZE}M
 NUM_THREADS=$3
 if [ $NUM_THREADS -lt 1 ] || [ $NUM_THREADS -gt 3 ]; then

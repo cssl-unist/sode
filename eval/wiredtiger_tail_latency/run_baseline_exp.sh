@@ -17,6 +17,12 @@ if [ ! -z $1 ]; then
 fi
 printf "DEV_NAME=$DEV_NAME\n"
 
+CACHED_DB=""
+if [ ! -z $2 ]; then
+    CACHED_DB=$2
+fi
+printf "CACHED_DB=$CACHED_DB\n"
+
 pushd $BASE_DIR/benchmark
 ./build_and_install_wiredtiger.sh 1> /dev/null 2> /dev/null
 ./build_and_install_ycsb.sh 1> /dev/null 2> /dev/null
@@ -39,9 +45,9 @@ for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.ya
     CACHE_SIZE=512
     for NUM_THREADS in 1 2 3; do
         # Evaluate WiredTiger with XRP
-        $EVAL_PATH/run_baseline_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS y $DEV_NAME
+        $EVAL_PATH/run_baseline_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS y $DEV_NAME $CACHED_DB
         # Evaluate WiredTiger with read()
-        $EVAL_PATH/run_baseline_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS n $DEV_NAME
+        $EVAL_PATH/run_baseline_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS n $DEV_NAME $CACHED_DB
     done
 done
 

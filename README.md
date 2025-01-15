@@ -142,10 +142,23 @@ cd eval/test/
 ```
 
 #### Run All Benchmarks
+Before the running all benchmarks, we recommend to create DB for WiredTiger evaluations to save your time.
+It will create 4.9T DBs for 2~3 days or more.
+```
+cd eval/
+./create_db.sh <cached path>  # e.g. ./create_db.sh /cached-db
+```
+
 Run the script with the emulator device name (e.g. /dev/nvme0n1):
 ```
 cd eval/
 ./run.sh /dev/nvme0n1
+```
+
+If you want to use cached DBs, run the script with the cached DB path:
+```
+cd eval/
+./run.sh /dev/nvme0n1 /cached-db
 ```
 
 #### Generate Figures

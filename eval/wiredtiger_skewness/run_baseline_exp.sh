@@ -30,6 +30,10 @@ if [ ! -z $1 ]; then
     DEV_NAME=$1
 fi
 
+if [ ! -z $2 ]; then
+    CACHED_DB_PATH=$2/baseline_throughput_${CONFIG}_512_1
+fi
+
 pushd $BASE_DIR/benchmark
 ./build_and_install_wiredtiger.sh 1> /dev/null 2> /dev/null
 ./build_and_install_ycsb.sh 1> /dev/null 2> /dev/null
