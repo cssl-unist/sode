@@ -16,8 +16,9 @@ fi
 printf "wiredtiger_skweness"
 
 pushd wiredtiger_skewness
-./run_baseline_exp.sh $DEV_NAME $CACHED_DB_PATH
-./run_sode_exp.sh $DEV_NAME $CACHED_DB_PATH
+# CAUTION: skewness case does not support cached DBs
+./run_baseline_exp.sh $DEV_NAME
+./run_sode_exp.sh $DEV_NAME
 popd
 
 printf "wiredtiger_throughput\n"

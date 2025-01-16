@@ -17,7 +17,7 @@ CACHED_DB_PATH="/tigerhome"
 
 DEV_NAME="/dev/nvme0n1"
 
-if [ $# -ne 4 ] && [ $# -ne 5 ]; then
+if [ $# -ne 4 ] && [ $# -ne 5 ] && [ $# -ne 6 ]; then
     printf "Usage: $0 <config file (ycsb_*.yaml)> <cache size in MB (min: 512, max: 4096)> <number of threads (min: 1, max: 3)> <use XRP (y/n)> <block device (optional, default: $DEV_NAME)>\n"
     exit 1
 fi
@@ -37,16 +37,18 @@ if [ $CACHE_SIZE -lt 512 ] || [ $CACHE_SIZE -gt 4096 ]; then
     exit 1
 fi
 
-if [ ! -z $6 ]; then
-    CACHED_DB_PATH=$6/sode_tail_${CONFIG}_${CACHE_SIZE}_${NUM_THREADS}
-fi
-
-CACHE_SIZE=${CACHE_SIZE}M
 NUM_THREADS=$3
 if [ $NUM_THREADS -lt 1 ] || [ $NUM_THREADS -gt 3 ]; then
     printf "Number of threads $NUM_THREADS is out of range. Min #threads: 1. Max #threads: 3.\n"
     exit 1
 fi
+
+if [ ! -z $6 ]; then
+    CACHED_DB_PATH=$6/sode_tail_${CONFIG}_${CACHE_SIZE}_${NUM_THREADS}
+fi
+
+CACHE_SIZE=${CACHE_SIZE}M
+
 USE_XRP=$4
 if [ $USE_XRP != 'y' ] && [ $USE_XRP != 'n' ]; then
     printf "USE_XRP $USE_XRP is invalid. It should be either y or n.\n"

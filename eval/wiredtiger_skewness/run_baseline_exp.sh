@@ -31,7 +31,7 @@ if [ ! -z $1 ]; then
 fi
 
 if [ ! -z $2 ]; then
-    CACHED_DB_PATH=$2/baseline_throughput_${CONFIG}_512_1
+    CACHED_DB_PATH=$2/baseline_skewness_${CONFIG}_512_1
 fi
 
 pushd $BASE_DIR/benchmark
@@ -68,6 +68,13 @@ $UTILS_PATH/mount_disk.sh $DEV_NAME $MOUNT_POINT
 mkdir -p $EVAL_PATH/result
 
 pushd $YCSB_PATH/build
+
+
+cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
+sed -i 's#data_dir: .*#data_dir: "'$DB_PATH'"#' $YCSB_CONFIG_PATH
+sed -i 's#nr_thread: .*#nr_thread: '$NUM_THREADS'#' $YCSB_CONFIG_PATH
+sed -i 's#cache_size=[0-9A-Za-z]*,#cache_size='$CACHE_SIZE',#' $YCSB_CONFIG_PATH
+sed -i 's#nr_op: .*#nr_op: '$NUM_OPS'#' $YCSB_CONFIG_PATH
 
 # Create database file
 # Note: YCSB-C is read-only. We don't need to recreate after each exp
