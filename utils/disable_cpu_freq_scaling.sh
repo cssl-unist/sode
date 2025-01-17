@@ -29,7 +29,12 @@ for CORE in cpu[0-9]*; do
 
     pushd cpufreq
     LOW_CPU_FREQ=`cat cpuinfo_min_freq`
-    if [ "${CORE}" == "cpu17" ]; then
+	SODE_MIN_FREQ=1200000
+	if [ "$LOW_CPU_FREQ" -le "$SODE_MIN_FREQ" ]; then
+		LOW_CPU_FREQ=$SODE_MIN_FREQ
+	fi
+
+    if [ "${CORE}" -lt "cpu17" ]; then
         echo "$CORE userspace"
         sudo bash -c "echo \"userspace\" > scaling_governor"
         sudo bash -c "echo $LOW_CPU_FREQ > scaling_setspeed"
