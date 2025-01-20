@@ -22,6 +22,8 @@ SODE requires three hardware components:
     At least, we recommend 192GB of memory bound to the node for computational storage emulation because the YCSB benchmark requires large disk space.
 4. Other requirements\
     We recommend to **turn off hyper-threading, processor C-states, and turbo boost**.
+5. (Optional) Low CPU frequency scaling for wimpy device cores\
+    Our [disable_cpu_freq_scaling.sh](utils/disable_cpu_freq_scaling.sh) script will set the CPU frequency to 1.20GHz or the minimum frequency of your processor. In our observation (Fig. 4) on [our paper](etc/fast25-sode.pdf), our microbenchmark with ARM Cortex-A53 shows the reason why 1.20GHz is better. Nevertheless, you can experiment with lower CPU frequencies. In Wiredtiger, where optimization by resubmission is small, the performance is slower than the original setup because the wimpy core makes it hard to handle resubmission tasks faster. In this case, the optimization level by SODE decreases and becomes similar to XRP's computing, so the throughput becomes similar to XRP, but tail latency increases due to SODE's computing.
 
 Tested SODE hardware configuration (or [see SODE paper, 5 Evaluation](etc/fast25-sode.pdf)):
 |   Hardware    | Product | Description |
@@ -65,10 +67,14 @@ uname -r
 
 #### Build and Setup Computational Storage Device Emulator
 
-First, modify the following option to reserve physical memory to bind specific memory to the node used for emulation. This configuration assumes 192GB memory from the offset 192GB is reserved. And, your system must disable interrupt remapping (`intremap`) and intel I\O MMU service (`intel_iommu`). You can modify the setup:
+First, modify `/etc/default/grub` by adding the following option to reserve physical memory to bind specific memory to the node used for emulation. This configuration assumes 192GB memory from the offset 192GB is reserved. And your system must disable I\O MMU service (e.g. 'intel_iommu'). You can modify the setup:
 ```
 # memmap=<memory size>\\\$<memory offset>
-GRUB_CMDLINE_LINUX="... memmap=192G\\\$192G intremap=off intel_iommu=off"
+GRUB_CMDLINE_LINUX="... memmap=192G\\\$192G intel_iommu=off"
+```
+(Optional) your system may require disabling I\O MMU services or Intel VT-d in BIOS either without the kernel booting option. Or, you can disable interrupt remapping (`intremap`). In the case of interrupt remapping, you can add this on `/etc/default/grub`:
+```
+GRUB_CMDLINE_LINUX="... intremap=off"
 ```
 
 Second, update grub and reboot your system:
