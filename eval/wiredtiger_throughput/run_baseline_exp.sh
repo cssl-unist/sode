@@ -51,7 +51,7 @@ for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.ya
     done
     
     NUM_THREADS=1
-    for CACHE_SIZE in 512 1024 2048 4096; do
+    for CACHE_SIZE in 1024 2048 4096; do
         # Evaluate WiredTiger with XRP
         $EVAL_PATH/run_baseline_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS y $DEV_NAME $CACHED_DB
         # Evaluate WiredTiger with read()
