@@ -2,7 +2,7 @@
 database:
   key_size: 16
   value_size: 16
-  nr_entry: 1073
+  nr_entry: 10734
 
 # Workload Parameters
 workload:

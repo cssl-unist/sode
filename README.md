@@ -157,6 +157,13 @@ cd eval/
 ./create_db.sh <cached path>  # e.g. ./create_db.sh /cached-db
 ```
 
+(Optional) You can experiment with small DBs using the command below to check SODE's functionality.
+This command will change the original configurations of WiredTiger, so you must revert them if you want to use actual inputs.
+```
+cd benchmark/My-YCSB/wiredtiger
+cp fast_config/* original_config/
+```
+
 Run the script with the emulator device name (e.g. /dev/nvme0n1):
 ```
 cd eval/
