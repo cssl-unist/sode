@@ -65,6 +65,16 @@ cd utils/
 uname -r
 ```
 
+If you change your default kernel to SODE's, then modify GRUB\_DEFAULT value:
+```
+# Check the order of SODE's kernel
+vi /boot/grub/grub.cfg
+
+# Update the default value
+sudo vi /etc/default/grub.cfg
+```
+
+
 #### Build and Setup Computational Storage Device Emulator
 
 First, modify `/etc/default/grub` by adding the following option to reserve physical memory to bind specific memory to the node used for emulation. This configuration assumes 192GB memory from the offset 192GB is reserved. And your system must disable I\O MMU service (e.g. 'intel_iommu'). You can modify the setup:
