@@ -17,7 +17,7 @@ SODE requires three hardware components:
     **Your system must have two nodes at least because one is used for applications, and the other is used for computational storage emulation**. Currently, SODE is tested on two-node systems (Node 1 for applications and Node 2 for computational storage emulation).
 2. Emulating wimpy on-device cores\
     Some cores used by on-device computations need CPU frequency scaling to emulate 
-    whimpy on-device cores. **First, you must select 9 cores (5 for storage emulation + 4 for on-device computations) at least for evaluations of SODE, and change [disable_cpu_freq_scaling.sh](utils/disable_cpu_freq_scaling.sh) script to fix the frequency of 4 cores for on-device computations**. For example, CPU 17, 18, 19, and 20 are used for on-device computations. Other CPU 12, 13, 14, 15, and 16 are used for storage emulations. **Second, you must specify and set [NUM\_R\_CPU](src/emulator/nvmev.h) (Number of On-device CPUs) value also**. In other words, your system must have a CPU node for emulation with 9 cores. For a detailed explanation, see [SODE paper, 4.2 Emulating Wimpy On-device Cores](etc/fast25-sode.pdf).
+    whimpy on-device cores. Before selecting CPUs, **check how many CPUs exist on which NUMA node with `lscpu`**. **First, you must select 9 cores (5 for storage emulation + 4 for on-device computations) at least for evaluations of SODE, and change [disable_cpu_freq_scaling.sh](utils/disable_cpu_freq_scaling.sh) script to fix the frequency of 4 cores for on-device computations**. For example, CPU 17, 18, 19, and 20 are used for on-device computations. Other CPU 12, 13, 14, 15, and 16 are used for storage emulations. **Second, you must specify and set [NUM\_R\_CPU](src/emulator/nvmev.h) (Number of On-device CPUs) value also**. In other words, your system must have a CPU node for emulation with 9 cores. For a detailed explanation, see [SODE paper, 4.2 Emulating Wimpy On-device Cores](etc/fast25-sode.pdf).
 3. Large memory bound to the node for computational storage emulation\
     At least, we recommend 192GB of memory bound to the node for computational storage emulation because the YCSB benchmark requires large disk space.
 4. Other requirements\
@@ -25,12 +25,21 @@ SODE requires three hardware components:
 5. (Optional) Low CPU frequency scaling for wimpy device cores\
     Our [disable_cpu_freq_scaling.sh](utils/disable_cpu_freq_scaling.sh) script will set the CPU frequency to 1.20GHz or the minimum frequency of your processor. In our observation (Fig. 4) on [our paper](etc/fast25-sode.pdf), our microbenchmark with ARM Cortex-A53 shows the reason why 1.20GHz is better. Nevertheless, you can experiment with lower CPU frequencies. In Wiredtiger, where optimization by resubmission is small, the performance is slower than the original setup because the wimpy core makes it hard to handle resubmission tasks faster. In this case, the optimization level by SODE decreases and becomes similar to XRP's computing, so the throughput becomes similar to XRP, but tail latency increases due to SODE's computing.
 
-Tested SODE hardware configuration (or [see SODE paper, 5 Evaluation](etc/fast25-sode.pdf)):
+Tested SODE hardware configurations:
+1. Hardware setup actual SODE evaluation ([see SODE paper, 5 Evaluation](etc/fast25-sode.pdf))
+
 |   Hardware    | Product | Description |
 |---------------|---------|-------------|
 |   CPU         |   Two Intel Xeon Gold 6136, 3.00GHz | Low CPU Frequency 1.20GHz, NUMA Configurations |
 |   Motherboard |   Supermicro X11DPi-N |   two NUMA nodes, each having 12 cores and 192GB of memory |
 | Memory        |   Samsung DDR4 M393A4K40BB2-CTD 32GB | 192GB (32GBx6) + 192GB (32GBx6) |
+
+2. [CloudLab c220g5-type](https://docs.cloudlab.us/hardware.html)
+
+|   Hardware    | Product | Description |
+|---------------|---------|-------------|
+|   CPU         |   Two Intel Xeon Silver 4114, 2.20GHz | Low CPU Frequency 0.8GHz, NUMA Configurations |
+| Memory        |   192GB ECC DDR4-2666 Memory |
 
 ### Instructions
 #### Software Dependency
@@ -213,6 +222,21 @@ Here is a list of the key results in this paper:
 * Figure 13: Normalized throughput of WiredTiger on YCSB-C
 * Appendix Figure 2: Throughput of WiredTiger for varying cache sizes
 
+## Alternative Environment
+
+### SODE with CloudLab
+
+You can evaluate SODE in [CloudLab](https://docs.cloudlab.us/getting-started.html).
+We recommend you choose a hardware configuration that includes two CPUs, a large amount of RAM, and a large disk (e.g., [s220g1, sm220u](https://docs.cloudlab.us/hardware.html)).
+
+### SODE with Virtual Machine
+
+We added Vagrantfile to test SODE. In this environment, SODE's evaluation quality was poor and unstable.
+Our Vagrantfile only supports libvirt as a provider to setup NUMA nodes on VM.
+To evaluate SODE in VM, we required the following efforts:
+1. Attach a disk with `virsh` for cached DBs ([See Vagrantfile host_shell](Vagrantfile)).
+2. Expand the VM's disk space.
+4. Set CPU affinity of virtual cores to bind physical cores to each ([See this document](https://vagrant-libvirt.github.io/vagrant-libvirt/configuration.html)).
 
 ## Authors
 - Chanyoung Park (UNIST)    chanyoung@unist.ac.kr
