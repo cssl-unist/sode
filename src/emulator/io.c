@@ -2447,7 +2447,6 @@ void NVMEV_IO_WORKER_INIT(struct nvmev_dev *nvmev_vdev)
                 worker->work_queue[j][i].nsecs_target = 0;
                 worker->work_queue[j][i].is_resubmit = false;
             }
-
         }
 
         last = NR_MAX_PARALLEL_IO * queue - 1;
@@ -2479,7 +2478,7 @@ void NVMEV_IO_WORKER_INIT(struct nvmev_dev *nvmev_vdev)
 		kthread_bind(worker->task_struct, nvmev_vdev->config.cpu_nr_io_workers[worker_id]);
 
         worker->resubmit_task = kthread_create(nvmev_resubmit_worker, worker, "%s", "resubmit_thread");
-        kthread_bind(worker->resubmit_task, nvmev_vdev->config.cpu_nr_io_workers[worker_id] + nvmev_vdev->config.nr_io_workers);
+        kthread_bind(worker->resubmit_task, nvmev_vdev->config.cpu_nr_re_workers[worker_id]);
 	}
 
 	for (worker_id = 0; worker_id < nvmev_vdev->config.nr_io_workers; worker_id++) {

@@ -145,6 +145,8 @@ struct nvmev_config {
 	unsigned int cpu_nr_dispatcher;
 	unsigned int nr_io_workers;
 	unsigned int cpu_nr_io_workers[32];
+	unsigned int nr_re_workers;
+	unsigned int cpu_nr_re_workers[32];
 
 	/* TODO Refactoring storage configurations */
 	unsigned int nr_io_units;

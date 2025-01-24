@@ -71,6 +71,7 @@ static unsigned int nr_io_units = 8;
 static unsigned int io_unit_shift = 12;
 
 static char *cpus;
+static char *wimpy_device_cpus;
 static unsigned int debug = 0;
 
 int io_using_dma = false;
@@ -109,6 +110,8 @@ module_param(io_unit_shift, uint, 0444);
 MODULE_PARM_DESC(io_unit_shift, "Size of each I/O unit (2^)");
 module_param(cpus, charp, 0444);
 MODULE_PARM_DESC(cpus, "CPU list for process, completion(int.) threads, Seperated by Comma(,)");
+module_param(wimpy_device_cpus, charp, 0444);
+MODULE_PARM_DESC(wimpy_device_cpus, "CPU list for wimpy device emulations, Seperated by Comma(,)");
 module_param(debug, uint, 0644);
 
 static void nvmev_proc_dbs(void)
@@ -456,7 +459,9 @@ static bool __load_configs(struct nvmev_config *config)
 {
 	bool first = true;
 	unsigned int cpu_nr;
+    unsigned int wimpy_cpu_nr = 0;
 	char *cpu;
+    char *wimpy_cpu;
 
 	if (__validate_configs() < 0) {
 		return false;
@@ -494,6 +499,25 @@ static bool __load_configs(struct nvmev_config *config)
 		}
 		first = false;
 	}
+
+    config->nr_re_workers = 0;
+    while ((wimpy_cpu = strsep(&wimpy_device_cpus, ",")) != NULL) {
+        cpu_nr = (unsigned int)simple_strtol(wimpy_cpu, NULL, 10);
+
+        config->cpu_nr_re_workers[config->nr_re_workers] = cpu_nr;
+        config->nr_re_workers++;
+    }
+
+    if (config->nr_re_workers != config->nr_io_workers) {
+        NVMEV_INFO("Wrong State: IO workers (%d) and resubmission workers (%d) mismatche\n",
+                config->nr_io_workers,
+                config->nr_re_workers
+                );
+    }
+
+    if (config->nr_re_workers != NUM_R_CPU) {
+        NVMEV_INFO("Wrong State: check nvmev.h::NUM_R_CPU (%d)\n", NUM_R_CPU);
+    }
 
 	return true;
 }
