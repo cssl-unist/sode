@@ -57,6 +57,12 @@ cd benchmark/
 * yaml is used to build YCSB.
 * clang and llvm are used to compile BPF programs
 * We recommand use python3.6 to run [the script](benchmark/My-YCSB/script/zipfian_trace.py) due to fstring usages.
+  
+(Optional) you may require these additional dependencies:
+```
+sudo apt-get install cmake numactl dwarves texlive-latex-base texlive-latex-extra texlive-fonts-recommended dvipng cm-super
+pip3 install numpy matplotlib seaborn latex
+```
 
 #### Build SODE kernel
 First, compile and install a custom kernel (This process will require some time to install dependencies and compile the kernel from scratch):
