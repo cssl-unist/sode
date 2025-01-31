@@ -1,3 +1,6 @@
+![](https://secartifacts.github.io/usenixsec2023/usenixbadges-available.png)
+![](https://secartifacts.github.io/usenixsec2023/usenixbadges-functional.png)
+
 # Selective On-Device Execution of Data-Dependent Read I/Os (SODE)
 
 ## Introduction
