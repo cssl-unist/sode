@@ -254,5 +254,16 @@ To evaluate SODE in VM, we required the following efforts:
 
 ## Publication
 ```
-Not Yet
+@inproceedings {305238,
+   author = {Chanyoung Park and Minu Chung and HyunGon Moon},
+   title = {Selective {On-Device} Execution of {Data-Dependent} Read {I/Os}},
+   booktitle = {23rd USENIX Conference on File and Storage Technologies (FAST 25)},
+   year = {2025},
+   isbn = {978-1-939133-45-8},
+   address = {Santa Clara, CA},
+   pages = {373--390},
+   url = {https://www.usenix.org/conference/fast25/presentation/park},
+   publisher = {USENIX Association},
+   month = feb
+}
 ```
